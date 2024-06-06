@@ -6,6 +6,10 @@ project(
     DESCRIPTION "Git Gud With Data Structures"
 )
 
+if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/Common/CMakeLists.txt")
+    add_subdirectory(Common)
+endif()
+
 if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/Graphs/Adjacency_List/CMakeLists.txt")
     add_subdirectory(Graphs/Adjacency_List)
 endif()
