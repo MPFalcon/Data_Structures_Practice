@@ -22,7 +22,7 @@ int print_note(const char * p_note_message,
             stderr, "\n\nNOTE[x]  %s: %s\n\n", p_note_message, p_note_location);
     }
 
-    EXIT:
+EXIT:
 
     // (void)p_note_location;
     // (void)p_note_message;
@@ -42,11 +42,11 @@ int print_error(const char * p_err_message, const char * p_err_location)
     (void)fprintf(
         stderr, "\n\nERROR[x]  %s: %s\n\n", p_err_message, p_err_location);
 
-    EXIT:
-    
+EXIT:
+
     // (void)p_err_location;
     // (void)p_err_message;
-    
+
     return FAILURE;
 }
 
@@ -57,14 +57,14 @@ int detected_null_pointer(const char * p_func_name)
         goto EXIT;
     }
 
-    #ifdef DEBUG
-        (void)fprintf(
-            stderr, "\n\nERROR [x]  Null Pointer Detected: %s\n\n", p_func_name);
-    #else
-        (void)p_func_name;
-    #endif
+#ifdef DEBUG
+    (void)fprintf(
+        stderr, "\n\nERROR [x]  Null Pointer Detected: %s\n\n", p_func_name);
+#else
+    (void)p_func_name;
+#endif
 
-    EXIT:
+EXIT:
 
     // (void)p_func_name;
 

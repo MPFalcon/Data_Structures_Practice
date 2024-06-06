@@ -10,11 +10,11 @@
 
 /**
  * @brief           Driver code for adjacency list
- * 
+ *
  * @param size      Size of the graph
- * 
+ *
  * @return          SUCCESS: 0
- *                  FAILURE: 1 
+ *                  FAILURE: 1
  */
 int setup_program(uint64_t size);
 

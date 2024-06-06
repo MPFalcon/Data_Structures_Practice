@@ -12,10 +12,10 @@
 #    include <unistd.h>
 #    include <errno.h>
 
-#    define  SUCCESS       0
-#    define  FAILURE       1
-#    define  ERROR        -1
-#    define  DEFAULT_BASE 10
+#    define SUCCESS      0
+#    define FAILURE      1
+#    define ERROR        -1
+#    define DEFAULT_BASE 10
 
 #endif /* COMMON_MACROS_H */
 

@@ -13,13 +13,13 @@
 
 /**
  * @brief                   Handles command line arguments
- * 
+ *
  * @param argc              Number of arguments to process
  * @param argv              Command line arguments
  * @param requested_size    Requested size of the adjacency list
- * 
+ *
  * @return                  SUCCESS: 0
- *                          FAILURE: 1 
+ *                          FAILURE: 1
  */
 int handle_cli(int argc, char ** argv, uint64_t * requested_size);
 

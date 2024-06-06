@@ -1,7 +1,5 @@
 rm -rf ./build
-
-clang-format -i Graphs/Adjacency_List/include/*
-clang-format -i Graphs/Adjacency_List/src/*
+./clang_script.sh
 
 mkdir build
 cd build
