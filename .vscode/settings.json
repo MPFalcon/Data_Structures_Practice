@@ -1,8 +1,0 @@
-{
-    "files.associations": {
-        "adjacency_list.h": "c",
-        "cli_handling.h": "c",
-        "print_utilities.h": "c",
-        "common_macros.h": "c"
-    }
-}
