@@ -10,12 +10,12 @@
 
 #    define DIRECTED     0x1
 #    define NON_DIRECTED 0x0
-typedef struct __attribute__((packed)) edge_node
+typedef struct edge_node
 {
     uint64_t weight;
-    void *   adjacent_node;
+    void *   adjacent_graph_node;
 } edge_node_t;
-typedef struct __attribute__((packed)) adjacency_list_node
+typedef struct adjacency_list_node
 {
     // sizeof(edge_node_t) * friend_count
     uint64_t       node_id;

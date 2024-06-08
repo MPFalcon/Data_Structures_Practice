@@ -8,14 +8,16 @@
 
 #    include <stdio.h>
 #    include <stdlib.h>
+#    include <fcntl.h>
+#    include <sys/types.h>
 #    include <stdint.h>
 #    include <unistd.h>
 #    include <string.h>
 #    include <errno.h>
 
+#    define ERROR        -1
 #    define SUCCESS      0
 #    define FAILURE      1
-#    define ERROR        -1
 #    define DEFAULT_BASE 10
 
 #endif /* COMMON_MACROS_H */

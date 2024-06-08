@@ -11,6 +11,9 @@
 
 #    define MAX_STATES           52
 #    define AVG_CITIES_PER_STATE 300
+#    define BASE_ID              100000
+
+// Queue will possibly work
 
 typedef struct user_base_bucket
 {
