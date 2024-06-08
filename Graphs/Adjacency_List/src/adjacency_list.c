@@ -9,8 +9,8 @@
  *
  * @return                  Weight
  */
-static int compare_occupations(const char * occupation_01,
-                               const char * occupation_02);
+static uint64_t compare_attributes(const char * occupation_01,
+                                   const char * occupation_02);
 
 /**
  * @brief               Create a profile
@@ -46,6 +46,38 @@ static int create_profile(uint64_t size,
  *              FAILURE: 1
  */
 static int dequeue_id(uint64_t * id);
+
+/**
+ * @brief               Probe every user in a given city
+ *
+ * @param city_map      Valid city map instance
+ * @param recomended    Valid recomendation list
+ * @param user          Valid instance of current user
+ * @param curr_quota    Current amount of people in the recommendation list
+ *
+ * @return              SUCCESS: 0
+ *                      FAILURE: 1
+ */
+static int check_city(ub_list_t *  city_map,
+                      al_node_t ** recomended,
+                      al_node_t *  user,
+                      uint32_t *   curr_quota);
+
+/**
+ * @brief               Probe every city in a given state
+ *
+ * @param city_map      Valid state map instance
+ * @param recomended    Valid recomendation list
+ * @param user          Valid instance of current user
+ * @param curr_quota    Current amount of people in the recommendation list
+ *
+ * @return              SUCCESS: 0
+ *                      FAILURE: 1
+ */
+static int check_state(ub_list_t *  state_map,
+                       al_node_t ** recomended,
+                       al_node_t *  user,
+                       uint32_t *   curr_quota);
 
 int setup_program(uint64_t size)
 {
@@ -168,8 +200,8 @@ EXIT:
     return err_code;
 }
 
-static int compare_occupations(const char * occupation_01,
-                               const char * occupation_02)
+static uint64_t compare_attributes(const char * occupation_01,
+                                   const char * occupation_02)
 {
     // TODO: Use XOR algorithm to find check if hashed values
     // are the same in an array produced by strtok
@@ -217,6 +249,84 @@ static int dequeue_id(uint64_t * id)
     lseek(rw_fd, final_len, SEEK_SET);
     write(rw_fd, &next_avail_id, sizeof(uint64_t));
     close(rw_fd);
+
+    err_code = SUCCESS;
+
+EXIT:
+
+    return err_code;
+}
+
+static int check_city(ub_list_t *  city_map,
+                      al_node_t ** recomended,
+                      al_node_t *  user,
+                      uint32_t *   curr_quota)
+{
+    int           err_code     = FAILURE;
+    ub_bucket_t * curr_node    = city_map->head;
+    uint64_t      total_weight = 0;
+
+    while (NULL != curr_node)
+    {
+        if (user->node_id == ((al_node_t *)curr_node->data)->node_id)
+        {
+            curr_node = curr_node->next;
+
+            continue;
+        }
+
+        total_weight += (compare_attributes(
+            user->data->occupation,
+            ((al_node_t *)curr_node->data)->data->occupation));
+
+        if (total_weight <= 100)
+        {
+            recomended[*curr_quota] = ((al_node_t *)curr_node->data);
+            (*curr_quota)++;
+        }
+
+        if (RECOMENDATION_QUOTA > *curr_quota)
+        {
+            curr_node = curr_node->next;
+        }
+        else
+        {
+            err_code = SUCCESS;
+
+            break;
+        }
+    }
+
+    err_code = SUCCESS;
+
+EXIT:
+
+    return err_code;
+}
+
+static int check_state(ub_list_t *  state_map,
+                       al_node_t ** recomended,
+                       al_node_t *  user,
+                       uint32_t *   curr_quota)
+{
+    int err_code = FAILURE;
+
+    uint32_t hashed_city = hash_value(user->data->city);
+
+    for (uint64_t idx = 0; AVG_CITIES_PER_STATE > idx; idx++)
+    {
+        if ((NULL != state_map->city_map[idx]) && (hashed_city != idx))
+        {
+            if (FAILURE ==
+                check_city(
+                    state_map->city_map[idx], recomended, user, curr_quota))
+            {
+                print_error("Something went wrong", __func__);
+
+                goto EXIT;
+            }
+        }
+    }
 
     err_code = SUCCESS;
 
