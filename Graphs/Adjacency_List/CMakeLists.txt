@@ -6,6 +6,8 @@ set(SRC_FILES
     src/main.c
     src/adjacency_list.c
     src/cli_handling.c
+    src/security_functions.c
+    src/user_base_map.c
 )
 
 add_executable(${PROJECT_NAME} ${SRC_FILES})
