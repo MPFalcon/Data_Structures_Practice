@@ -10,7 +10,7 @@
 
 #    define DIRECTED            0x1
 #    define NON_DIRECTED        0x0
-#    define RECOMENDATION_QUOTA 10
+#    define RECOMMENDATION_QUOTA 10
 typedef struct edge_node
 {
     uint64_t weight;

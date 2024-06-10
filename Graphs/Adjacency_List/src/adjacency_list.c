@@ -48,36 +48,42 @@ static int create_profile(uint64_t size,
 static int dequeue_id(uint64_t * id);
 
 /**
- * @brief               Probe every user in a given city
+ * @brief                   Probe every user in a given city
  *
- * @param city_map      Valid city map instance
- * @param recomended    Valid recomendation list
- * @param user          Valid instance of current user
- * @param curr_quota    Current amount of people in the recommendation list
+ * @param city_map          Valid city map instance
+ * @param recommendation    Valid recommendation list
+ * @param user              Valid instance of current user
+ * @param curr_quota        Current amount of people in the
+ *                          recommendation list
  *
- * @return              SUCCESS: 0
- *                      FAILURE: 1
+ * @return                  SUCCESS: 0
+ *                          FAILURE: 1
  */
 static int check_city(ub_list_t *  city_map,
-                      al_node_t ** recomended,
+                      al_node_t ** recommendation,
                       al_node_t *  user,
                       uint32_t *   curr_quota);
 
 /**
- * @brief               Probe every city in a given state
+ * @brief                   Probe every city in a given state
  *
- * @param city_map      Valid state map instance
- * @param recomended    Valid recomendation list
- * @param user          Valid instance of current user
- * @param curr_quota    Current amount of people in the recommendation list
+ * @param city_map          Valid state map instance
+ * @param recommendation    Valid recommendation list
+ * @param user              Valid instance of current user
+ * @param curr_quota        Current amount of people in the
+ *                          recommendation list
  *
- * @return              SUCCESS: 0
- *                      FAILURE: 1
+ * @return                  SUCCESS: 0
+ *                          FAILURE: 1
  */
 static int check_state(ub_list_t *  state_map,
-                       al_node_t ** recomended,
+                       al_node_t ** recommendation,
                        al_node_t *  user,
                        uint32_t *   curr_quota);
+
+static int recommend_friends(al_node_t * user);
+
+static int print_recommended(al_node_t * potential_friend);
 
 int setup_program(uint64_t size)
 {
@@ -94,7 +100,7 @@ int setup_program(uint64_t size)
 
     create_profile(size,
                    "bigsexxxy123",
-                   "rachetb*tch",
+                   "rachet",
                    "Bailey",
                    "Night Club Host",
                    "Miami",
@@ -258,7 +264,7 @@ EXIT:
 }
 
 static int check_city(ub_list_t *  city_map,
-                      al_node_t ** recomended,
+                      al_node_t ** recommendation,
                       al_node_t *  user,
                       uint32_t *   curr_quota)
 {
@@ -275,17 +281,22 @@ static int check_city(ub_list_t *  city_map,
             continue;
         }
 
-        total_weight += (compare_attributes(
+        total_weight += (
+            compare_attributes(
             user->data->occupation,
-            ((al_node_t *)curr_node->data)->data->occupation));
+            ((al_node_t *)curr_node->data)->data->occupation) +
+            compare_attributes(
+            user->data->name,
+            ((al_node_t *)curr_node->data)->data->name)
+            );
 
         if (total_weight <= 100)
         {
-            recomended[*curr_quota] = ((al_node_t *)curr_node->data);
+            recommendation[*curr_quota] = ((al_node_t *)curr_node->data);
             (*curr_quota)++;
         }
 
-        if (RECOMENDATION_QUOTA > *curr_quota)
+        if (RECOMMENDATION_QUOTA > *curr_quota)
         {
             curr_node = curr_node->next;
         }
@@ -305,21 +316,21 @@ EXIT:
 }
 
 static int check_state(ub_list_t *  state_map,
-                       al_node_t ** recomended,
+                       al_node_t ** recommendation,
                        al_node_t *  user,
                        uint32_t *   curr_quota)
 {
     int err_code = FAILURE;
 
-    uint32_t hashed_city = hash_value(user->data->city);
+    uint32_t users_hashed_city = hash_value(user->data->city);
 
     for (uint64_t idx = 0; AVG_CITIES_PER_STATE > idx; idx++)
     {
-        if ((NULL != state_map->city_map[idx]) && (hashed_city != idx))
+        if ((NULL != state_map->city_map[idx]) && (users_hashed_city != idx))
         {
             if (FAILURE ==
                 check_city(
-                    state_map->city_map[idx], recomended, user, curr_quota))
+                    state_map->city_map[idx], recommendation, user, curr_quota))
             {
                 print_error("Something went wrong", __func__);
 
@@ -327,6 +338,66 @@ static int check_state(ub_list_t *  state_map,
             }
         }
     }
+
+    err_code = SUCCESS;
+
+EXIT:
+
+    return err_code;
+}
+
+static int recommend_friends(al_node_t *  user)
+{
+    int err_code = FAILURE;
+    uint32_t recommendation_quota = 0;
+    uint64_t idx = 0;
+
+    al_node_t * recommendation[RECOMMENDATION_QUOTA];
+
+    uint32_t hashed_city  = hash_value(user->data->city);
+    uint32_t hashed_state = hash_value(user->data->state);
+
+    while (NULL != user->edges[idx])
+    {
+        // TODO: implement dystra's algorithm, or 4-star, to find friends of friends;
+    }
+
+    if (RECOMMENDATION_QUOTA != recommendation_quota)
+    {
+        err_code = check_city(user_base_map_g[hashed_state]->city_map[hashed_city], recommendation, user, &recommendation_quota);
+    }
+
+    if (RECOMMENDATION_QUOTA != recommendation_quota)
+    {
+        err_code = check_state(user_base_map_g[hashed_state], recommendation, user, &recommendation_quota);
+    }
+
+    for (idx = 0; RECOMMENDATION_QUOTA > idx; idx++)
+    {
+        if (NULL != recommendation[idx])
+        {
+            (void)print_recommended(recommendation[idx]);
+        }
+    }
+
+    err_code = SUCCESS;
+
+EXIT:
+
+    return err_code;
+}
+
+static int print_recommended(al_node_t * potential_friend)
+{
+    int err_code = FAILURE;
+
+    printf("\n\n");
+    printf("ID: %lu\n", potential_friend->node_id);
+    printf("Name: %s\n", potential_friend->data->name);
+    printf("Username: %s\n", potential_friend->data->username);
+    printf("Location: %s, %s\n", potential_friend->data->city, potential_friend->data->state);
+    printf("Occupation: %s", potential_friend->data->occupation);
+    printf("\n\n");
 
     err_code = SUCCESS;
 
