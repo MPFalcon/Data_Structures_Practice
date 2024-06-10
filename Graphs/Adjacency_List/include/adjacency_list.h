@@ -8,8 +8,8 @@
 
 #    include "user_base_map.h"
 
-#    define DIRECTED            0x1
-#    define NON_DIRECTED        0x0
+#    define DIRECTED             0x1
+#    define NON_DIRECTED         0x0
 #    define RECOMMENDATION_QUOTA 10
 typedef struct edge_node
 {

@@ -37,6 +37,32 @@ static int create_profile(uint64_t size,
                           uint64_t age);
 
 /**
+ * @brief               Create profile for user
+ *
+ * @param user          Valid user profile instance passed by reference
+ * @param size          Amount of friends that can be had
+ * @param username      Username
+ * @param password      Password
+ * @param name          Name
+ * @param occupation    Occupation
+ * @param city          City
+ * @param state         State
+ * @param age           Age
+ *
+ * @return              SUCCESS: 0
+ *                      FAILURE: 1
+ */
+static int create_user_profile(al_node_t ** user,
+                               uint64_t     size,
+                               char *       username,
+                               char *       password,
+                               char *       name,
+                               char *       occupation,
+                               char *       city,
+                               char *       state,
+                               uint64_t     age);
+
+/**
  * @brief       Process id of a new profile
  *
  * @param id    Id passed by reference so it can
@@ -65,6 +91,21 @@ static int check_city(ub_list_t *  city_map,
                       uint32_t *   curr_quota);
 
 /**
+ * @brief                   Probe every state in user base map
+ *
+ * @param recommendation    Valid recommendation list
+ * @param user              Valid instance of current user
+ * @param curr_quota        Current amount of people in the
+ *                          recommendation list
+ *
+ * @return                  SUCCESS: 0
+ *                          FAILURE: 1
+ */
+static int check_states(al_node_t ** recommendation,
+                        al_node_t *  user,
+                        uint32_t *   curr_quota);
+
+/**
  * @brief                   Probe every city in a given state
  *
  * @param city_map          Valid state map instance
@@ -76,18 +117,42 @@ static int check_city(ub_list_t *  city_map,
  * @return                  SUCCESS: 0
  *                          FAILURE: 1
  */
-static int check_state(ub_list_t *  state_map,
-                       al_node_t ** recommendation,
-                       al_node_t *  user,
-                       uint32_t *   curr_quota);
+static int traverse_state(ub_list_t *  state_map,
+                          al_node_t ** recommendation,
+                          al_node_t *  user,
+                          uint32_t *   curr_quota);
 
 static int recommend_friends(al_node_t * user);
 
-static int print_recommended(al_node_t * potential_friend);
+/**
+ * @brief                           Print what is recommended to the screen
+ *
+ * @param potential_friends_list    Valid recommended list instance
+ *
+ * @return                          SUCCESS: 0
+ *                                  FAILURE: 1
+ */
+static int print_recommended(al_node_t ** potential_friends_list);
 
 int setup_program(uint64_t size)
 {
-    int err = FAILURE;
+    int         err          = FAILURE;
+    al_node_t * user_profile = NULL;
+
+    // Use SQLDB++ to retrieve user information, otherwise
+    // invoke function below
+
+    create_user_profile(&user_profile,
+                        size,
+                        "cybergod1",
+                        "discipline8",
+                        "PFC Purifoy",
+                        "Soldier",
+                        "Augusta",
+                        "GA",
+                        21);
+
+    // ----------------------------------------------
 
     create_profile(size,
                    "beautifulones2",
@@ -117,17 +182,97 @@ int setup_program(uint64_t size)
                    22);
 
     create_profile(size,
-                   "cybergod1",
-                   "discipline8",
-                   "PFC Purifoy",
+                   "sgtimhoff82",
+                   "firstline",
+                   "Imhoff",
                    "Soldier",
                    "Augusta",
                    "GA",
                    21);
 
+    recommend_friends(user_profile);
+
     err = SUCCESS;
 
     return err;
+}
+
+static int create_user_profile(al_node_t ** user,
+                               uint64_t     size,
+                               char *       username,
+                               char *       password,
+                               char *       name,
+                               char *       occupation,
+                               char *       city,
+                               char *       state,
+                               uint64_t     age)
+{
+    int err_code = FAILURE;
+
+    al_node_t * new_graph_node = (al_node_t *)calloc(1, sizeof(al_node_t));
+
+    new_graph_node->directed = DIRECTED;
+    new_graph_node->edges    = (edge_node_t **)calloc((size - 1), 8);
+
+    new_graph_node->data = (p_node_t *)calloc(1, sizeof(p_node_t));
+
+    strncpy(new_graph_node->data->username, username, MAX_CHAR_LEN);
+    strncpy(new_graph_node->data->password, password, MAX_CHAR_LEN);
+    strncpy(new_graph_node->data->name, name, MAX_CHAR_LEN);
+    strncpy(new_graph_node->data->occupation, occupation, MAX_CHAR_LEN);
+    strncpy(new_graph_node->data->city, city, MAX_CHAR_LEN);
+    strncpy(new_graph_node->data->state, state, MAX_CHAR_LEN);
+    new_graph_node->data->age = age;
+    dequeue_id(&new_graph_node->node_id);
+
+    uint32_t hashed_state = (hash_value(state) % MAX_STATES);
+    uint32_t hashed_city  = (hash_value(city) % AVG_CITIES_PER_STATE);
+
+    ub_bucket_t * curr_bucket = (ub_bucket_t *)calloc(1, sizeof(ub_bucket_t));
+
+    if (NULL == user_base_map_g[hashed_state])
+    {
+        user_base_map_g[hashed_state] =
+            (ub_list_t *)calloc(1, sizeof(ub_list_t));
+
+        if (NULL == user_base_map_g[hashed_state]->city_map[hashed_city])
+        {
+            user_base_map_g[hashed_state]->city_map[hashed_city] =
+                (ub_list_t *)calloc(1, sizeof(ub_list_t));
+        }
+
+        user_base_map_g[hashed_state]->city_map[hashed_city]->head =
+            curr_bucket;
+        user_base_map_g[hashed_state]->city_map[hashed_city]->tail =
+            curr_bucket;
+    }
+    else if (NULL == user_base_map_g[hashed_state]->city_map[hashed_city])
+    {
+        user_base_map_g[hashed_state]->city_map[hashed_city] =
+            (ub_list_t *)calloc(1, sizeof(ub_list_t));
+        user_base_map_g[hashed_state]->city_map[hashed_city]->head =
+            curr_bucket;
+        user_base_map_g[hashed_state]->city_map[hashed_city]->tail =
+            curr_bucket;
+    }
+    else
+    {
+        user_base_map_g[hashed_state]->city_map[hashed_city]->tail->next =
+            curr_bucket;
+        curr_bucket->prev =
+            user_base_map_g[hashed_state]->city_map[hashed_city]->tail;
+        user_base_map_g[hashed_state]->city_map[hashed_city]->tail =
+            curr_bucket;
+    }
+
+    curr_bucket->data = new_graph_node;
+    *user             = new_graph_node;
+
+    err_code = SUCCESS;
+
+EXIT:
+
+    return err_code;
 }
 
 static int create_profile(uint64_t size,
@@ -213,6 +358,10 @@ static uint64_t compare_attributes(const char * occupation_01,
     // are the same in an array produced by strtok
 
     uint64_t weighted_points = 0;
+
+EXIT:
+
+    return weighted_points;
 }
 
 static int dequeue_id(uint64_t * id)
@@ -281,14 +430,12 @@ static int check_city(ub_list_t *  city_map,
             continue;
         }
 
-        total_weight += (
-            compare_attributes(
-            user->data->occupation,
-            ((al_node_t *)curr_node->data)->data->occupation) +
-            compare_attributes(
-            user->data->name,
-            ((al_node_t *)curr_node->data)->data->name)
-            );
+        total_weight +=
+            (compare_attributes(
+                 user->data->occupation,
+                 ((al_node_t *)curr_node->data)->data->occupation) +
+             compare_attributes(user->data->name,
+                                ((al_node_t *)curr_node->data)->data->name));
 
         if (total_weight <= 100)
         {
@@ -315,14 +462,90 @@ EXIT:
     return err_code;
 }
 
-static int check_state(ub_list_t *  state_map,
-                       al_node_t ** recommendation,
-                       al_node_t *  user,
-                       uint32_t *   curr_quota)
+static int recommend_friends(al_node_t * user)
 {
-    int err_code = FAILURE;
+    int      err_code             = FAILURE;
+    uint32_t recommendation_quota = 0;
+    uint64_t idx                  = 0;
 
-    uint32_t users_hashed_city = hash_value(user->data->city);
+    al_node_t * recommendation[RECOMMENDATION_QUOTA] = { 0 };
+
+    uint32_t hashed_city =
+        (hash_value(user->data->city) % AVG_CITIES_PER_STATE);
+    uint32_t hashed_state = (hash_value(user->data->state) % MAX_STATES);
+
+    while (NULL != user->edges[idx])
+    {
+        // TODO: implement dykstra's algorithm, or 4-star, to find friends of
+        // friends;
+    }
+
+    if (RECOMMENDATION_QUOTA != recommendation_quota)
+    {
+        err_code =
+            check_city(user_base_map_g[hashed_state]->city_map[hashed_city],
+                       recommendation,
+                       user,
+                       &recommendation_quota);
+    }
+
+    if (RECOMMENDATION_QUOTA != recommendation_quota)
+    {
+        err_code = traverse_state(user_base_map_g[hashed_state],
+                                  recommendation,
+                                  user,
+                                  &recommendation_quota);
+    }
+
+    if (RECOMMENDATION_QUOTA != recommendation_quota)
+    {
+        err_code = check_states(recommendation, user, &recommendation_quota);
+    }
+
+    (void)print_recommended(recommendation);
+
+    err_code = SUCCESS;
+
+EXIT:
+
+    return err_code;
+}
+
+static int print_recommended(al_node_t ** potential_friends_list)
+{
+    int      err_code = FAILURE;
+    uint64_t idx      = 0;
+
+    while (NULL != potential_friends_list[idx])
+    {
+        printf("\n\n");
+        printf("ID: %lu\n", potential_friends_list[idx]->node_id);
+        printf("Name: %s\n", potential_friends_list[idx]->data->name);
+        printf("Username: %s\n", potential_friends_list[idx]->data->username);
+        printf("Location: %s, %s\n",
+               potential_friends_list[idx]->data->city,
+               potential_friends_list[idx]->data->state);
+        printf("Occupation: %s", potential_friends_list[idx]->data->occupation);
+        printf("\n\n");
+
+        idx++;
+    }
+
+    err_code = SUCCESS;
+
+EXIT:
+
+    return err_code;
+}
+
+static int traverse_state(ub_list_t *  state_map,
+                          al_node_t ** recommendation,
+                          al_node_t *  user,
+                          uint32_t *   curr_quota)
+{
+    int      err_code = FAILURE;
+    uint32_t users_hashed_city =
+        (hash_value(user->data->city) % AVG_CITIES_PER_STATE);
 
     for (uint64_t idx = 0; AVG_CITIES_PER_STATE > idx; idx++)
     {
@@ -343,61 +566,30 @@ static int check_state(ub_list_t *  state_map,
 
 EXIT:
 
-    return err_code;
+    return SUCCESS;
 }
 
-static int recommend_friends(al_node_t *  user)
+static int check_states(al_node_t ** recommendation,
+                        al_node_t *  user,
+                        uint32_t *   curr_quota)
 {
-    int err_code = FAILURE;
-    uint32_t recommendation_quota = 0;
-    uint64_t idx = 0;
+    int      err_code           = FAILURE;
+    uint32_t users_hashed_state = (hash_value(user->data->state) % MAX_STATES);
 
-    al_node_t * recommendation[RECOMMENDATION_QUOTA];
-
-    uint32_t hashed_city  = hash_value(user->data->city);
-    uint32_t hashed_state = hash_value(user->data->state);
-
-    while (NULL != user->edges[idx])
+    for (uint64_t idx = 0; MAX_STATES > idx; idx++)
     {
-        // TODO: implement dystra's algorithm, or 4-star, to find friends of friends;
-    }
-
-    if (RECOMMENDATION_QUOTA != recommendation_quota)
-    {
-        err_code = check_city(user_base_map_g[hashed_state]->city_map[hashed_city], recommendation, user, &recommendation_quota);
-    }
-
-    if (RECOMMENDATION_QUOTA != recommendation_quota)
-    {
-        err_code = check_state(user_base_map_g[hashed_state], recommendation, user, &recommendation_quota);
-    }
-
-    for (idx = 0; RECOMMENDATION_QUOTA > idx; idx++)
-    {
-        if (NULL != recommendation[idx])
+        if ((NULL != user_base_map_g[idx]) && (users_hashed_state != idx))
         {
-            (void)print_recommended(recommendation[idx]);
+            if (FAILURE ==
+                traverse_state(
+                    user_base_map_g[idx], recommendation, user, curr_quota))
+            {
+                print_error("Something went wrong", __func__);
+
+                goto EXIT;
+            }
         }
     }
-
-    err_code = SUCCESS;
-
-EXIT:
-
-    return err_code;
-}
-
-static int print_recommended(al_node_t * potential_friend)
-{
-    int err_code = FAILURE;
-
-    printf("\n\n");
-    printf("ID: %lu\n", potential_friend->node_id);
-    printf("Name: %s\n", potential_friend->data->name);
-    printf("Username: %s\n", potential_friend->data->username);
-    printf("Location: %s, %s\n", potential_friend->data->city, potential_friend->data->state);
-    printf("Occupation: %s", potential_friend->data->occupation);
-    printf("\n\n");
 
     err_code = SUCCESS;
 
