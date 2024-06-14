@@ -1,1 +1,0 @@
-/usr/bin/cc -fPIC -shared -Wl,-soname,libcommon_shared.so -o libcommon_shared.so CMakeFiles/common_shared.dir/src/print_utilities.c.o 
