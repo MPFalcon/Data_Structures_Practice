@@ -1,0 +1,2 @@
+/usr/bin/ar qc libcommon_static.a CMakeFiles/common_static.dir/src/print_utilities.c.o
+/usr/bin/ranlib libcommon_static.a

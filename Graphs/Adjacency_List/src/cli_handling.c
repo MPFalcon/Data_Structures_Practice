@@ -70,7 +70,7 @@ int handle_cli(int argc, char ** argv, uint64_t * requested_size)
                 break;
             }
 
-            printf("Adjacency list will have requested size of %s", optarg);
+            printf("Adjacency list will have requested size of %s\n", optarg);
 
             if (SUCCESS == setup_program(*requested_size))
             {
