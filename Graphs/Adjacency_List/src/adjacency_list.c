@@ -405,6 +405,9 @@ static int dequeue_id(uint64_t * id)
     write(rw_fd, &next_avail_id, sizeof(uint64_t));
     close(rw_fd);
 
+    free(buffer);
+    buffer = NULL;
+
     err_code = SUCCESS;
 
 EXIT:
